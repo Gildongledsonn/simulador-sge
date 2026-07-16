@@ -74,10 +74,20 @@
     </div>
 
     <div class="gauge-grid">
-      <div class="gauge-card">
+      <div class="gauge-card voltage-card">
         <span class="gauge-label">Tensão</span>
-        <span class="gauge-value" id="gVoltage">220.0</span>
-        <span class="gauge-unit">V</span>
+        <div class="voltage-split">
+          <div class="voltage-row">
+            <span class="voltage-tag">F/N</span>
+            <span class="gauge-value" id="gVoltageFN">220.0</span>
+            <span class="gauge-unit">V</span>
+          </div>
+          <div class="voltage-row">
+            <span class="voltage-tag">F/F</span>
+            <span class="gauge-value" id="gVoltageFF">380.0</span>
+            <span class="gauge-unit">V</span>
+          </div>
+        </div>
       </div>
       <div class="gauge-card">
         <span class="gauge-label">Corrente</span>

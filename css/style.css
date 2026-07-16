@@ -157,6 +157,33 @@ main { max-width: 1280px; margin: 0 auto; padding: 28px; }
 .gauge-value { font-family: var(--font-mono); font-size: 28px; font-weight: 500; }
 .gauge-unit { font-size: 11px; color: var(--text-faint); }
 
+.voltage-card { justify-content: flex-start; }
+.voltage-split {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+.voltage-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+}
+.voltage-row + .voltage-row { border-top: 1px solid var(--border); }
+.voltage-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  background: var(--panel-alt);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.voltage-row .gauge-value { font-size: 19px; }
+.voltage-row .gauge-unit { font-size: 10px; }
+
 /* ---------- Panels ---------- */
 .panel-row {
   display: grid;

@@ -128,7 +128,8 @@ function initDashboard() {
 
 function updateDashboard() {
   // tensão com pequena oscilação
-  const voltage = 220 + (Math.random() * 6 - 3);
+  const voltage = 220 + (Math.random() * 6 - 3);   // tensão F/N (fase-neutro)
+  const voltageFF = voltage * Math.sqrt(3);          // tensão F/F (fase-fase)
 
   // fator de potência bruto (sem compensação): passeio aleatório lento,
   // simulando motores subcarregados como no estudo de caso 1
@@ -164,7 +165,8 @@ function updateDashboard() {
   const reactive = Math.sqrt(Math.max(apparent ** 2 - activePower ** 2, 0));
   const current = (apparent * 1000) / (Math.sqrt(3) * 380);
 
-  document.getElementById('gVoltage').textContent = voltage.toFixed(1);
+  document.getElementById('gVoltageFN').textContent = voltage.toFixed(1);
+  document.getElementById('gVoltageFF').textContent = voltageFF.toFixed(1);
   document.getElementById('gCurrent').textContent = current.toFixed(1);
   document.getElementById('gActive').textContent = activePower.toFixed(1);
   document.getElementById('gReactive').textContent = reactive.toFixed(1);
