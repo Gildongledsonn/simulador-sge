@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGE — Simulador de Sistema de Gerenciamento de Energia</title>
+<meta name="description" content="Simulador interativo do Sistema de Gerenciamento de Energia (SGE) — TCC de Análise e Desenvolvimento de Sistemas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="scanlines" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">SGE</span>
+    <div class="brand-text">
+      <strong>Sistema de Gerenciamento de Energia</strong>
+      <small>Simulador de monitoramento, análise e otimização do consumo elétrico</small>
+    </div>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="Módulos do simulador">
+    <button class="tab-btn active" data-tab="dashboard" role="tab" aria-selected="true">01 · Painel geral</button>
+    <button class="tab-btn" data-tab="caso1" role="tab" aria-selected="false">02 · Fator de potência</button>
+    <button class="tab-btn" data-tab="caso2" role="tab" aria-selected="false">03 · Demanda contratada</button>
+  </nav>
+
+  <div class="clock-block">
+    <span class="clock-label">Relógio da simulação</span>
+    <span class="clock-value" id="simClock">00:00</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= DASHBOARD GERAL ================= -->
+  <section id="dashboard" class="view active">
+    <div class="view-head">
+      <h1>Painel geral da instalação</h1>
+      <p>Leituras simuladas em tempo real do medidor geral — tensão, corrente, potências e fator de potência, conforme a arquitetura de aquisição de dados descrita no TCC.</p>
+    </div>
+
+    <div class="alert-strip" id="alertStrip">
+      <div class="led-item ok" id="ledFP">
+        <span class="led-dot"></span> Fator de potência
+      </div>
+      <div class="led-item ok" id="ledDemanda">
+        <span class="led-dot"></span> Demanda
+      </div>
+      <div class="led-item ok" id="ledTensao">
+        <span class="led-dot"></span> Qualidade de tensão
+      </div>
+    </div>
+
+    <div class="gauge-grid">
+      <div class="gauge-card">
+        <span class="gauge-label">Tensão</span>
+        <span class="gauge-value" id="gVoltage">220.0</span>
+        <span class="gauge-unit">V</span>
+      </div>
+      <div class="gauge-card">
+        <span class="gauge-label">Corrente</span>
+        <span class="gauge-value" id="gCurrent">—</span>
+        <span class="gauge-unit">A</span>
+      </div>
+      <div class="gauge-card">
+        <span class="gauge-label">Potência ativa</span>
+        <span class="gauge-value" id="gActive">—</span>
+        <span class="gauge-unit">kW</span>
+      </div>
+      <div class="gauge-card">
+        <span class="gauge-label">Potência reativa</span>
+        <span class="gauge-value" id="gReactive">—</span>
+        <span class="gauge-unit">kvar</span>
+      </div>
+      <div class="gauge-card">
+        <span class="gauge-label">Potência aparente</span>
+        <span class="gauge-value" id="gApparent">—</span>
+        <span class="gauge-unit">kVA</span>
+      </div>
+      <div class="gauge-card highlight">
+        <span class="gauge-label">Fator de potência</span>
+        <span class="gauge-value" id="gFP">—</span>
+        <span class="gauge-unit">cos φ</span>
+      </div>
+    </div>
+
+    <div class="panel-row">
+      <div class="panel chart-panel">
+        <div class="panel-title">Curva de potência ativa — últimos registros</div>
+        <canvas id="chartLive" height="220"></canvas>
+      </div>
+      <div class="panel log-panel">
+        <div class="panel-title">Registro de eventos</div>
+        <ul id="eventLog" class="event-log"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CASO 1 — FATOR DE POTÊNCIA ================= -->
+  <section id="caso1" class="view">
+    <div class="view-head">
+      <h1>Estudo de caso 1 — Baixo fator de potência</h1>
+      <p>Indústria metalúrgica com motores de indução subcarregados. O ponto de entrega opera com fator de potência médio de <strong>0,81</strong>, abaixo do mínimo regulatório de <strong>0,92</strong>, gerando cobrança por excedente reativo. Ajuste as variáveis para reproduzir o diagnóstico e a correção propostos no SGE.</p>
+    </div>
+
+    <div class="panel-row">
+      <div class="panel controls-panel">
+        <div class="panel-title">Controles do cenário</div>
+
+        <label class="control-block">
+          <span>Subcarregamento dos motores</span>
+          <input type="range" id="motorLoad" min="0" max="100" value="70">
+          <span class="control-readout"><span id="motorLoadVal">70</span>%</span>
+        </label>
+
+        <label class="control-block">
+          <span>Estágios ativos do banco de capacitores</span>
+          <input type="range" id="capStages" min="0" max="5" value="0" step="1">
+          <span class="control-readout"><span id="capStagesVal">0</span> / 5</span>
+        </label>
+
+        <div class="reference-box">
+          <span>Limite ANEEL (Res. 1.000/2021)</span>
+          <strong>f.p. ≥ 0,92</strong>
+        </div>
+      </div>
+
+      <div class="panel dial-panel">
+        <div class="panel-title">Fator de potência</div>
+        <svg id="fpDial" viewBox="0 0 240 150" class="dial"></svg>
+        <div class="dial-status" id="fpStatus">—</div>
+      </div>
+
+      <div class="panel results-panel">
+        <div class="panel-title">Diagnóstico do SGE</div>
+        <dl class="result-list">
+          <div><dt>Potência ativa</dt><dd id="c1Active">—</dd></div>
+          <div><dt>Potência reativa</dt><dd id="c1Reactive">—</dd></div>
+          <div><dt>Potência aparente</dt><dd id="c1Apparent">—</dd></div>
+          <div><dt>Reativo compensado</dt><dd id="c1Compensated">—</dd></div>
+          <div><dt>Excedente reativo faturável (estimado)</dt><dd id="c1Cost">—</dd></div>
+        </dl>
+        <p class="hint" id="c1Hint"></p>
+      </div>
+    </div>
+
+    <div class="panel chart-panel">
+      <div class="panel-title">Fator de potência antes × depois da compensação</div>
+      <canvas id="chartFP" height="180"></canvas>
+    </div>
+  </section>
+
+  <!-- ================= CASO 2 — DEMANDA CONTRATADA ================= -->
+  <section id="caso2" class="view">
+    <div class="view-head">
+      <h1>Estudo de caso 2 — Ultrapassagem de demanda contratada</h1>
+      <p>Rede de supermercados com demanda contratada de <strong>150 kW</strong>. Em horário de ponta, a operação simultânea de refrigeração, climatização e iluminação eleva a demanda instantânea a até <strong>185 kW</strong>, gerando penalidade por ultrapassagem. Ative o gerenciamento preditivo do SGE para simular a contenção automática.</p>
+    </div>
+
+    <div class="panel-row">
+      <div class="panel controls-panel">
+        <div class="panel-title">Controles do cenário</div>
+
+        <label class="control-block">
+          <span>Demanda contratada</span>
+          <input type="range" id="contractedDemand" min="120" max="200" value="150" step="5">
+          <span class="control-readout"><span id="contractedDemandVal">150</span> kW</span>
+        </label>
+
+        <label class="control-block toggle-block">
+          <span>Gerenciamento preditivo de demanda (SGE)</span>
+          <input type="checkbox" id="autoManage">
+          <span class="control-readout" id="autoManageState">Desligado</span>
+        </label>
+
+        <button class="play-btn" id="playDay">▶ Reproduzir dia (24h)</button>
+      </div>
+
+      <div class="panel results-panel">
+        <div class="panel-title">Resumo das últimas 24 horas</div>
+        <dl class="result-list">
+          <div><dt>Pico de demanda</dt><dd id="c2Peak">—</dd></div>
+          <div><dt>Horário do pico</dt><dd id="c2PeakHour">—</dd></div>
+          <div><dt>Horas acima do contrato</dt><dd id="c2HoursOver">—</dd></div>
+          <div><dt>Penalidade estimada</dt><dd id="c2Cost">—</dd></div>
+        </dl>
+        <p class="hint" id="c2Hint"></p>
+      </div>
+    </div>
+
+    <div class="panel chart-panel">
+      <div class="panel-title">Curva de demanda diária × demanda contratada</div>
+      <canvas id="chartDemand" height="240"></canvas>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Simulador conceitual desenvolvido a partir do TCC <em>“Sistema de Gerenciamento de Energia: desenvolvimento de uma solução computacional para monitoramento, análise e otimização do consumo elétrico”</em> — Análise e Desenvolvimento de Sistemas.</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>
