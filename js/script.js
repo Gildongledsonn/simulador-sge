@@ -365,6 +365,11 @@ function updateCaso2(revealUpTo = 24) {
 
   const penalty = hoursOver > 0 ? (peak - contracted) * PENALTY_TARIFF : 0;
 
+  const hourLabel = document.getElementById('c2CurrentHour');
+  hourLabel.textContent = revealUpTo >= 24
+    ? '24h (dia completo)'
+    : `${String(revealUpTo).padStart(2, '0')}:00`;
+
   document.getElementById('c2Peak').textContent = `${peak.toFixed(0)} kW`;
   document.getElementById('c2PeakHour').textContent = `${String(peakHour).padStart(2, '0')}:00`;
   document.getElementById('c2HoursOver').textContent = `${hoursOver} h`;
