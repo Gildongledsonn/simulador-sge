@@ -84,6 +84,7 @@ let liveChart;
 let liveFP = 0.90;
 let lastCapStages = -1;
 const liveHistory = [];
+const liveTimeLabels = [];
 const contractedRefDemand = 480; // kW — referência da instalação genérica do painel geral
 
 function initDashboard() {
@@ -104,7 +105,7 @@ function initDashboard() {
           borderWidth: 2
         }]
       },
-      options: chartBaseOptions('kW')
+      options: withAxisTitles(chartBaseOptions('kW'), 'Horário', 'Potência ativa (kW)')
     });
   } else {
     showChartUnavailable('chartLive');
@@ -187,9 +188,11 @@ function updateDashboard() {
 
   // gráfico
   liveHistory.push(activePower);
+  liveTimeLabels.push(formatClock());
   if (liveHistory.length > 30) liveHistory.shift();
+  if (liveTimeLabels.length > 30) liveTimeLabels.shift();
   if (liveChart) {
-    liveChart.data.labels = liveHistory.map((_, i) => i);
+    liveChart.data.labels = liveTimeLabels;
     liveChart.data.datasets[0].data = liveHistory;
     liveChart.update('none');
   }
@@ -235,6 +238,14 @@ function chartBaseOptions(unit) {
       y: { ticks: { color: '#4E5A66', font: { size: 10 } }, grid: { color: '#1C2733' } }
     }
   };
+}
+
+/* adiciona títulos aos eixos de um gráfico, sem alterar chartBaseOptions
+   (usado só onde faz sentido, como no gráfico da curva de potência ativa) */
+function withAxisTitles(options, xTitle, yTitle) {
+  options.scales.x.title = { display: true, text: xTitle, color: '#7E8B99', font: { size: 11, family: 'JetBrains Mono' } };
+  options.scales.y.title = { display: true, text: yTitle, color: '#7E8B99', font: { size: 11, family: 'JetBrains Mono' } };
+  return options;
 }
 
 /* ---------------------------------------------------------
