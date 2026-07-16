@@ -5,10 +5,35 @@
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initClock();
-  initDashboard();
-  initCaso1();
-  initCaso2();
+  safeInit('Painel geral', initDashboard);
+  safeInit('Caso 1 (fator de potência)', initCaso1);
+  safeInit('Caso 2 (demanda contratada)', initCaso2);
 });
+
+/* Executa um módulo isoladamente: se algo falhar (ex.: Chart.js não
+   carregou por falta de internet/bloqueio de rede), os demais módulos
+   continuam funcionando normalmente. */
+function safeInit(label, fn) {
+  try {
+    fn();
+  } catch (err) {
+    console.error(`[SGE] Falha ao iniciar módulo "${label}":`, err);
+  }
+}
+
+/* true se a biblioteca Chart.js carregou com sucesso via CDN */
+function chartLibAvailable() {
+  return typeof Chart !== 'undefined';
+}
+
+function showChartUnavailable(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const msg = document.createElement('p');
+  msg.className = 'hint';
+  msg.textContent = 'Gráfico indisponível: não foi possível carregar a biblioteca Chart.js (verifique a conexão com a internet).';
+  canvas.replaceWith(msg);
+}
 
 /* ---------------------------------------------------------
    Navegação por abas
@@ -57,46 +82,85 @@ function formatClock() {
    --------------------------------------------------------- */
 let liveChart;
 let liveFP = 0.90;
+let lastCapStages = -1;
 const liveHistory = [];
 const contractedRefDemand = 480; // kW — referência da instalação genérica do painel geral
 
 function initDashboard() {
-  const ctx = document.getElementById('chartLive').getContext('2d');
-  liveChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label: 'Potência ativa (kW)',
-        data: [],
-        borderColor: '#2FD9C6',
-        backgroundColor: 'rgba(47,217,198,0.12)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 0,
-        borderWidth: 2
-      }]
-    },
-    options: chartBaseOptions('kW')
-  });
+  if (chartLibAvailable()) {
+    const ctx = document.getElementById('chartLive').getContext('2d');
+    liveChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Potência ativa (kW)',
+          data: [],
+          borderColor: '#2FD9C6',
+          backgroundColor: 'rgba(47,217,198,0.12)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 2
+        }]
+      },
+      options: chartBaseOptions('kW')
+    });
+  } else {
+    showChartUnavailable('chartLive');
+  }
 
   updateDashboard();
   setInterval(updateDashboard, 2500);
+
+  const capToggle = document.getElementById('autoCapBank');
+  if (capToggle) {
+    capToggle.addEventListener('change', function () {
+      const stateEl = document.getElementById('autoCapBankState');
+      if (stateEl) stateEl.textContent = this.checked ? 'Ligado' : 'Desligado';
+      logEvent(this.checked
+        ? 'Banco de capacitores automático ativado'
+        : 'Banco de capacitores automático desativado');
+      updateDashboard();
+    });
+  }
 }
 
 function updateDashboard() {
   // tensão com pequena oscilação
   const voltage = 220 + (Math.random() * 6 - 3);
 
-  // fator de potência: passeio aleatório lento entre 0.80 e 0.97
+  // fator de potência bruto (sem compensação): passeio aleatório lento,
+  // simulando motores subcarregados como no estudo de caso 1
   liveFP += (Math.random() * 0.02 - 0.01);
-  liveFP = Math.min(0.97, Math.max(0.80, liveFP));
+  liveFP = Math.min(0.95, Math.max(0.78, liveFP));
+
+  // banco de capacitores automático: se ligado, aciona estágios de +0,03
+  // até atingir o mínimo da ANEEL (0,92) ou esgotar os 5 estágios
+  const capCheckbox = document.getElementById('autoCapBank');
+  const capOn = capCheckbox ? capCheckbox.checked : false;
+  let stages = 0;
+  let effectiveFP = liveFP;
+  if (capOn) {
+    while (effectiveFP < ANEEL_MIN_FP && stages < 5) {
+      stages++;
+      effectiveFP = Math.min(0.98, liveFP + stages * 0.03);
+    }
+  }
+  const rawEl = document.getElementById('rawFPReadout');
+  if (rawEl) rawEl.textContent = liveFP.toFixed(2);
+  const stagesEl = document.getElementById('capBankStages');
+  if (stagesEl) stagesEl.textContent = `${stages} / 5`;
+  if (stages !== lastCapStages) {
+    if (capOn && stages > 0) logEvent(`Banco de capacitores: ${stages} estágio(s) acionado(s) — f.p. corrigido para ${effectiveFP.toFixed(2)}`);
+    lastCapStages = stages;
+  }
 
   // potência ativa com variação suave ao longo do "dia"
   const hourFactor = 0.6 + 0.4 * Math.sin((simMinutes / (24 * 60)) * Math.PI);
   const activePower = 320 * hourFactor + (Math.random() * 20 - 10);
 
-  const apparent = activePower / liveFP;
+  const apparent = activePower / effectiveFP;
   const reactive = Math.sqrt(Math.max(apparent ** 2 - activePower ** 2, 0));
   const current = (apparent * 1000) / (Math.sqrt(3) * 380);
 
@@ -105,11 +169,11 @@ function updateDashboard() {
   document.getElementById('gActive').textContent = activePower.toFixed(1);
   document.getElementById('gReactive').textContent = reactive.toFixed(1);
   document.getElementById('gApparent').textContent = apparent.toFixed(1);
-  document.getElementById('gFP').textContent = liveFP.toFixed(2);
+  document.getElementById('gFP').textContent = effectiveFP.toFixed(2);
 
   // LEDs de alerta
-  setLed('ledFP', liveFP < 0.85 ? 'critical' : liveFP < 0.92 ? 'warn' : 'ok',
-    'Fator de potência', liveFP < 0.92 ? `f.p. ${liveFP.toFixed(2)} abaixo do mínimo ANEEL (0,92)` : 'dentro do limite regulatório');
+  setLed('ledFP', effectiveFP < 0.85 ? 'critical' : effectiveFP < 0.92 ? 'warn' : 'ok',
+    'Fator de potência', effectiveFP < 0.92 ? `f.p. ${effectiveFP.toFixed(2)} abaixo do mínimo ANEEL (0,92)` : 'dentro do limite regulatório');
 
   setLed('ledDemanda',
     activePower > contractedRefDemand ? 'critical' : activePower > contractedRefDemand * 0.9 ? 'warn' : 'ok',
@@ -122,9 +186,11 @@ function updateDashboard() {
   // gráfico
   liveHistory.push(activePower);
   if (liveHistory.length > 30) liveHistory.shift();
-  liveChart.data.labels = liveHistory.map((_, i) => i);
-  liveChart.data.datasets[0].data = liveHistory;
-  liveChart.update('none');
+  if (liveChart) {
+    liveChart.data.labels = liveHistory.map((_, i) => i);
+    liveChart.data.datasets[0].data = liveHistory;
+    liveChart.update('none');
+  }
 }
 
 /* controla os LEDs e opcionalmente registra evento no log quando muda de estado */
@@ -281,6 +347,7 @@ function updateDial(fp) {
 }
 
 function buildFPChart() {
+  if (!chartLibAvailable()) { showChartUnavailable('chartFP'); return; }
   const ctx = document.getElementById('chartFP').getContext('2d');
   fpChart = new Chart(ctx, {
     type: 'bar',
@@ -298,6 +365,7 @@ function buildFPChart() {
 }
 
 function updateFPChart(fp) {
+  if (!fpChart) return;
   fpChart.data.datasets[0].data[0] = Number(fp.toFixed(3));
   fpChart.data.datasets[0].backgroundColor[0] = fp < ANEEL_MIN_FP ? '#E5535A' : '#2FD9C6';
   fpChart.update('none');
@@ -383,13 +451,16 @@ function updateCaso2(revealUpTo = 24) {
       ? 'Sem gerenciamento automático, a instalação ultrapassa a demanda contratada nos horários de ponta, gerando penalidade.'
       : 'Demanda contratada compatível com o perfil de consumo atual — sem ultrapassagem.';
 
-  demandChart.data.datasets[0].data = visibleCurve;
-  demandChart.data.datasets[0].pointBackgroundColor = curve.map(v => v > contracted ? '#E5535A' : '#2FD9C6');
-  demandChart.data.datasets[1].data = BASE_DEMAND_CURVE.map(() => contracted);
-  demandChart.update('none');
+  if (demandChart) {
+    demandChart.data.datasets[0].data = visibleCurve;
+    demandChart.data.datasets[0].pointBackgroundColor = curve.map(v => v > contracted ? '#E5535A' : '#2FD9C6');
+    demandChart.data.datasets[1].data = BASE_DEMAND_CURVE.map(() => contracted);
+    demandChart.update('none');
+  }
 }
 
 function buildDemandChart() {
+  if (!chartLibAvailable()) { showChartUnavailable('chartDemand'); return; }
   const ctx = document.getElementById('chartDemand').getContext('2d');
   demandChart = new Chart(ctx, {
     type: 'line',

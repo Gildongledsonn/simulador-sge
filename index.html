@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
@@ -63,6 +63,10 @@
         <input type="checkbox" id="autoCapBank">
         <span class="control-readout" id="autoCapBankState">Desligado</span>
       </label>
+      <div class="reference-box">
+        <span>F.P. bruto (sem correção)</span>
+        <strong id="rawFPReadout">—</strong>
+      </div>
       <div class="reference-box">
         <span>Estágios ativos</span>
         <strong id="capBankStages">0 / 5</strong>
@@ -229,6 +233,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="js/script.js"></script>
+<script src="js/script.js?v=4"></script>
 </body>
 </html>
