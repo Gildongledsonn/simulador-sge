@@ -56,6 +56,19 @@
       </div>
     </div>
 
+    <div class="panel controls-panel" style="margin-bottom:20px">
+      <div class="panel-title">Correção automática do fator de potência</div>
+      <label class="control-block toggle-block">
+        <span>Banco de capacitores automático</span>
+        <input type="checkbox" id="autoCapBank">
+        <span class="control-readout" id="autoCapBankState">Desligado</span>
+      </label>
+      <div class="reference-box">
+        <span>Estágios ativos</span>
+        <strong id="capBankStages">0 / 5</strong>
+      </div>
+    </div>
+
     <div class="gauge-grid">
       <div class="gauge-card">
         <span class="gauge-label">Tensão</span>
@@ -92,7 +105,9 @@
     <div class="panel-row">
       <div class="panel chart-panel">
         <div class="panel-title">Curva de potência ativa — últimos registros</div>
-        <canvas id="chartLive" height="220"></canvas>
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="chartLive"></canvas>
+        </div>
       </div>
       <div class="panel log-panel">
         <div class="panel-title">Registro de eventos</div>
@@ -151,7 +166,9 @@
 
     <div class="panel chart-panel">
       <div class="panel-title">Fator de potência antes × depois da compensação</div>
-      <canvas id="chartFP" height="180"></canvas>
+      <div class="chart-wrap" style="height:180px">
+        <canvas id="chartFP"></canvas>
+      </div>
     </div>
   </section>
 
@@ -199,7 +216,9 @@
 
     <div class="panel chart-panel">
       <div class="panel-title">Curva de demanda diária × demanda contratada</div>
-      <canvas id="chartDemand" height="240"></canvas>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="chartDemand"></canvas>
+      </div>
     </div>
   </section>
 
@@ -209,7 +228,7 @@
   <p>Simulador conceitual desenvolvido a partir do TCC <em>“Sistema de Gerenciamento de Energia: desenvolvimento de uma solução computacional para monitoramento, análise e otimização do consumo elétrico”</em> — Análise e Desenvolvimento de Sistemas.</p>
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="js/script.js"></script>
 </body>
 </html>
