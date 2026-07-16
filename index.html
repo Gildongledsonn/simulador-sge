@@ -118,7 +118,14 @@
 
     <div class="panel-row">
       <div class="panel chart-panel">
-        <div class="panel-title">Curva de potência ativa — últimos registros</div>
+        <div class="panel-title-row">
+          <div class="panel-title">Curva de potência — tempo real</div>
+          <div class="metric-toggle-group" role="group" aria-label="Selecionar grandeza exibida">
+            <button type="button" class="metric-toggle" data-metric="ativa">Potência ativa</button>
+            <button type="button" class="metric-toggle" data-metric="reativa">Potência reativa</button>
+          </div>
+        </div>
+        <p class="chart-hint" id="metricHint">Nenhuma grandeza selecionada — exibindo potência aparente (kVA).</p>
         <div class="chart-wrap" style="height:220px">
           <canvas id="chartLive"></canvas>
         </div>

@@ -84,7 +84,10 @@ let liveChart;
 let liveFP = 0.90;
 let lastCapStages = -1;
 const liveHistory = [];
+const liveHistoryReactive = [];
+const liveHistoryApparent = [];
 const liveTimeLabels = [];
+let selectedMetric = null; // null = nenhuma selecionada -> mostra potência aparente
 const contractedRefDemand = 480; // kW — referência da instalação genérica do painel geral
 
 function initDashboard() {
@@ -105,11 +108,28 @@ function initDashboard() {
           borderWidth: 2
         }]
       },
-      options: withAxisTitles(chartBaseOptions('kW'), 'Horário', 'Potência ativa (kW)')
+      options: withAxisTitles(chartBaseOptions('kW'), 'Horário', 'Potência aparente (kVA)')
     });
   } else {
     showChartUnavailable('chartLive');
   }
+
+  document.querySelectorAll('.metric-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const metric = btn.dataset.metric;
+      selectedMetric = (selectedMetric === metric) ? null : metric;
+      document.querySelectorAll('.metric-toggle').forEach(b => b.classList.toggle('active', b.dataset.metric === selectedMetric));
+      const hintEl = document.getElementById('metricHint');
+      if (hintEl) {
+        hintEl.textContent = selectedMetric === 'ativa'
+          ? 'Exibindo potência ativa (kW) em tempo real.'
+          : selectedMetric === 'reativa'
+            ? 'Exibindo potência reativa (kvar) em tempo real.'
+            : 'Nenhuma grandeza selecionada — exibindo potência aparente (kVA).';
+      }
+      refreshLiveChartDisplay();
+    });
+  });
 
   updateDashboard();
   setInterval(updateDashboard, 2500);
@@ -125,6 +145,30 @@ function initDashboard() {
       updateDashboard();
     });
   }
+}
+
+/* decide qual grandeza exibir no gráfico, conforme os botões selecionados */
+function currentMetricInfo() {
+  if (selectedMetric === 'ativa') {
+    return { data: liveHistory, label: 'Potência ativa (kW)', border: '#2FD9C6', bg: 'rgba(47,217,198,0.12)' };
+  }
+  if (selectedMetric === 'reativa') {
+    return { data: liveHistoryReactive, label: 'Potência reativa (kvar)', border: '#F2A83B', bg: 'rgba(242,168,59,0.12)' };
+  }
+  return { data: liveHistoryApparent, label: 'Potência aparente (kVA)', border: '#8B7CFF', bg: 'rgba(139,124,255,0.12)' };
+}
+
+/* aplica a grandeza selecionada ao gráfico (dados, cor, legenda e título do eixo) */
+function refreshLiveChartDisplay() {
+  if (!liveChart) return;
+  const info = currentMetricInfo();
+  liveChart.data.labels = liveTimeLabels;
+  liveChart.data.datasets[0].data = info.data;
+  liveChart.data.datasets[0].label = info.label;
+  liveChart.data.datasets[0].borderColor = info.border;
+  liveChart.data.datasets[0].backgroundColor = info.bg;
+  if (liveChart.options.scales.y.title) liveChart.options.scales.y.title.text = info.label;
+  liveChart.update('none');
 }
 
 function updateDashboard() {
@@ -188,14 +232,14 @@ function updateDashboard() {
 
   // gráfico
   liveHistory.push(activePower);
+  liveHistoryReactive.push(reactive);
+  liveHistoryApparent.push(apparent);
   liveTimeLabels.push(formatClock());
   if (liveHistory.length > 30) liveHistory.shift();
+  if (liveHistoryReactive.length > 30) liveHistoryReactive.shift();
+  if (liveHistoryApparent.length > 30) liveHistoryApparent.shift();
   if (liveTimeLabels.length > 30) liveTimeLabels.shift();
-  if (liveChart) {
-    liveChart.data.labels = liveTimeLabels;
-    liveChart.data.datasets[0].data = liveHistory;
-    liveChart.update('none');
-  }
+  refreshLiveChartDisplay();
 }
 
 /* controla os LEDs e opcionalmente registra evento no log quando muda de estado */
@@ -231,7 +275,7 @@ function chartBaseOptions(unit) {
     animation: { duration: 250 },
     plugins: {
       legend: { labels: { color: '#7E8B99', font: { family: 'JetBrains Mono', size: 11 } } },
-      tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.formattedValue} ${unit}` } }
+      tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.formattedValue}` } }
     },
     scales: {
       x: { ticks: { color: '#4E5A66', font: { size: 10 } }, grid: { color: '#1C2733' } },
