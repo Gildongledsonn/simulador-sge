@@ -92,29 +92,38 @@ const contractedRefDemand = 480; // kW — referência da instalação genérica
 
 function initDashboard() {
   if (chartLibAvailable()) {
-    const ctx = document.getElementById('chartLive').getContext('2d');
-    liveChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Potência ativa (kW)',
-          data: [],
-          borderColor: '#2FD9C6',
-          backgroundColor: 'rgba(47,217,198,0.12)',
-          fill: true,
-          tension: 0.35,
-          pointRadius: 0,
-          borderWidth: 2
-        }]
-      },
-      options: withAxisTitles(chartBaseOptions('kW'), 'Horário', 'Potência aparente (kVA)')
-    });
+    try {
+      const ctx = document.getElementById('chartLive').getContext('2d');
+      liveChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Potência ativa (kW)',
+            data: [],
+            borderColor: '#2FD9C6',
+            backgroundColor: 'rgba(47,217,198,0.12)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: 2
+          }]
+        },
+        options: withAxisTitles(chartBaseOptions('kW'), 'Horário', 'Potência aparente (kVA)')
+      });
+    } catch (err) {
+      console.error('[SGE] Falha ao criar o gráfico do painel geral:', err);
+      showChartUnavailable('chartLive');
+    }
   } else {
     showChartUnavailable('chartLive');
   }
 
-  document.querySelectorAll('.metric-toggle').forEach(btn => {
+  const metricButtons = document.querySelectorAll('.metric-toggle');
+  if (metricButtons.length === 0) {
+    console.warn('[SGE] Botões .metric-toggle não encontrados no HTML — verifique se o index.html está atualizado.');
+  }
+  metricButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const metric = btn.dataset.metric;
       selectedMetric = (selectedMetric === metric) ? null : metric;
